@@ -18,6 +18,7 @@ $ python pr0cks.py --proxy SOCKS5:127.0.0.1:1080
 ```
 All your TCP trafic and DNS traffic should now pass through the ssh server kinda like if you had setup a tun redirection but without admin rights on the server !
 #help
+```text
 python pr0cks.py -h
 usage: procks [-h] [--proxy PROXY] [-p PORT] [-v] [--username USERNAME]
               [--password PASSWORD] [--dns-port DNS_PORT]
@@ -40,4 +41,4 @@ optional arguments:
                         ip:port of the DNS server to forward all DNS requests
                         to using TCP through the proxy (default
                         208.67.222.222:53)
-
+```

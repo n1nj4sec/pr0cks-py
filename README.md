@@ -2,7 +2,7 @@
 python script to transparently forward all TCP and DNS traffic through a socks4/socks5/HTTP_CONNECT proxy (like ssh -D) using iptables -j REDIRECT target
 
 # let's rock
-pr0cks allows you to redirect all your TCP and DNS traffic through a SOCKS4, SOCKS5 or HTTP_CONNECT proxy
+pr0cks allows you to redirect all your TCP and DNS traffic through a SOCKS4, SOCKS5 or HTTP_CONNECT proxy. 
 As an example we will use the socks5 proxy of openssh (the option -D)
 ```bash
 $ ssh -D 1080 user@sshserver
@@ -42,3 +42,7 @@ optional arguments:
                         to using TCP through the proxy (default
                         208.67.222.222:53)
 ```
+# TODO
+- support UDP with socks5
+- support proxy chaining
+- 

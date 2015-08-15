@@ -3,7 +3,8 @@ python script to transparently forward all TCP and DNS traffic through a socks4/
 ## Features :
 - set up a local transparent proxy compatible with socks4 socks5 and HTTP CONNECT proxies allowing to forward any TCP traffic transparently using iptables
 - set up a local transparent DNS proxy translating UDP port 53 requests to TCP allowing DNS traffic to go through a proxy without UDP support (like ssh -D option)
-- DNS caching mechanism to speed up the DSN resolutions through pr0cks
+- DNS caching mechanism to speed up the DNS resolutions through pr0cks
+
 # let's rock
 pr0cks allows you to redirect all your TCP and DNS traffic through a SOCKS4, SOCKS5 or HTTP_CONNECT proxy. 
 As an example we will use the socks5 proxy of openssh (the option -D)

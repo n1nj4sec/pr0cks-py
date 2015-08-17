@@ -19,7 +19,7 @@ then start pr0cks :
 ```bash
 $ python pr0cks.py --proxy SOCKS5:127.0.0.1:1080
 ```
-All your TCP trafic and DNS traffic should now pass through the ssh server kinda like if you had setup a tun redirection but without admin rights on the server !
+All your TCP trafic and DNS traffic should now pass through the ssh server kinda like if you had setup a tun VPN through ssh but without admin rights on the server !
 #help
 ```text
 python pr0cks.py -h

@@ -1,5 +1,6 @@
 # pr0cks
-python script to transparently forward all TCP and DNS traffic through a socks4/socks5/HTTP_CONNECT proxy (like ssh -D) using iptables -j REDIRECT target
+python script to transparently forward all TCP and DNS traffic through a socks / HTTPS proxy (CONNECT) (like ssh -D) using iptables -j REDIRECT target
+
 ## Features :
 - set up a local transparent proxy compatible with socks4 socks5 and HTTP CONNECT proxies allowing to forward any TCP traffic transparently using iptables
 - set up a local transparent DNS proxy translating UDP port 53 requests to TCP allowing DNS traffic to go through a proxy without UDP support (like ssh -D option)
@@ -19,7 +20,7 @@ then start pr0cks :
 ```bash
 $ python pr0cks.py --proxy SOCKS5:127.0.0.1:1080
 ```
-All your TCP trafic and DNS traffic should now pass through the ssh server kinda like if you had setup a tun VPN through ssh but without admin rights on the server !
+All your TCP traffic and DNS traffic should now pass through the ssh server kinda like if you had setup a tun VPN through ssh but without admin rights on the server !
 #help
 ```text
 python pr0cks.py -h
@@ -54,3 +55,6 @@ optional arguments:
 - support UDP (with socks5)
 - support proxy chaining
 
+Don't hesitate to send me your feedback or any issue you may find
+
+I hope it will be useful to someone ! Have fun :)

@@ -45,6 +45,11 @@ optional arguments:
                         to using TCP through the proxy (default
                         208.67.222.222:53)
 ```
+
+# Dependencies
+- dnslib (https://pypi.python.org/pypi/dnslib) for DNS UDP to TCP translation support
+- tested with Python 2.7
+
 # TODO
 - support UDP (with socks5)
 - support proxy chaining

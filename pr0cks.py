@@ -24,6 +24,7 @@ import socket
 import socks
 import argparse
 import traceback
+import logging
 import binascii
 from collections import OrderedDict
 
@@ -118,6 +119,7 @@ class Socks5Conn(asyncore.dispatcher):
 	def __init__(self, sock=None, map=None, conn=True, verbose=False):
 		self.out_buffer=b""
 		self.verbose=verbose
+		self.allsent=False
 		if conn is True:
 			#get the original dst address and port
 			odestdata = sock.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 16)
@@ -141,23 +143,26 @@ class Socks5Conn(asyncore.dispatcher):
 		self.out_buffer = self.out_buffer[num_sent:]
 
 	def handle_write(self):
-		self.initiate_send()
+		if self.allsent:
+			self.handle_close()
+		else:
+			self.initiate_send()
 
 	def writable(self):
-		return ((not self.connected) or len(self.out_buffer)>0)
+		return (self.allsent or len(self.out_buffer)>0)
 
 	def send(self, data):
-		if self.debug:
-			self.log_info('sending %s' % repr(data))
-		self.out_buffer += data
+		#if self.debug:
+		#	self.log_info('sending %s' % repr(data))
+		if data:
+			self.out_buffer += data
+		else:
+			self.allsent=True
 		#self.initiate_send()
 
 	def handle_read(self):
 		data = self.recv(8192)
-		if data:
-			if self.debug:
-				self.log_info('reading %s' % repr(data))
-			self.sock_class.send(data)
+		self.sock_class.send(data)
 
 	def handle_close(self):
 		self.close()
@@ -171,7 +176,7 @@ class Pr0cks5Server(asyncore.dispatcher):
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.set_reuse_addr()
 		self.bind((host, port))
-		self.listen(5)
+		self.listen(20)
 
 	def handle_accept(self):
 		pair = self.accept()

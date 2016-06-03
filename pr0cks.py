@@ -191,6 +191,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(prog='procks', description="Transparent SOCKS5/SOCKS4/HTTP_CONNECT Proxy")
     parser.add_argument('--proxy', default="SOCKS5:127.0.0.1:1080", help="proxytype:ip:port to forward our connections through. proxytype can be SOCKS5, SOCKS4 or HTTP")
     parser.add_argument('-p', '--port', type=int, default=10080, help="port to bind the transparent proxy on the local socket (default 10080)")
+    parser.add_argument('-n', '--nat', action='store_true', help="set bind address to 0.0.0.0 to make pr0cks work from a netfilter FORWARD rule instead of OUTPUT")
     parser.add_argument('-v', '--verbose', action="store_true", help="print all the connections requested through the proxy")
     parser.add_argument('--username', default=None, help="Username to authenticate with to the server. The default is no authentication.")
     parser.add_argument('--password', default=None, help="Only relevant when a username has been provided")
@@ -198,6 +199,9 @@ if __name__=='__main__':
     parser.add_argument('--dns-server', default="208.67.222.222:53", help="ip:port of the DNS server to forward all DNS requests to using TCP through the proxy (default 208.67.222.222:53)")
     args=parser.parse_args()
 
+    bind_address="127.0.0.1"
+    if args.nat:
+        bind_address="0.0.0.0"
     if dnslib_imported:
         try:
             dns_srv, dns_port=args.dns_server.split(':',1)
@@ -211,11 +215,11 @@ if __name__=='__main__':
         logger = DNSLogger("request,reply,truncated,error", False)
         udp_server = DNSServer(resolver,
                                port=args.dns_port,
-                               address="127.0.0.1",
+                               address=bind_address,
                                logger=logger,
                                handler=handler)
         udp_server.start_thread()
-        display("[+] DNS server started on %s:%s forwarding all DNS trafic to %s:%s using TCP"%("127.0.0.1", args.dns_port, dns_srv, dns_port))
+        display("[+] DNS server started on %s:%s forwarding all DNS trafic to %s:%s using TCP"%(bind_address, args.dns_port, dns_srv, dns_port))
 
     ptype,proxy_addr,proxy_port=args.proxy.split(":",2)
     t=None
@@ -240,7 +244,7 @@ if __name__=='__main__':
         display("[+] Provided credentials are %s:%s"%(args.username, args.password[0:3]+"*"*(len(args.password)-3)))
     socks.setdefaultproxy(proxytype=t, addr=proxy_addr, port=proxy_port, username=args.username, password=args.password)
 
-    display("[+] Forwarding all TCP traffic received on 127.0.0.1:%s through the %s proxy on %s:%s"%(args.port, ptype, proxy_addr, proxy_port))
+    display("[+] Forwarding all TCP traffic received on %s:%s through the %s proxy on %s:%s"%(bind_address, args.port, ptype, proxy_addr, proxy_port))
     display("[i] example of rule you need to have:")
     display("iptables -t nat -A OUTPUT -o eth0 -p tcp -m tcp !-d <proxy_server> -j REDIRECT --to-ports %s"%args.port)
     display("iptables -t nat -A OUTPUT -o eth0 -p udp -m udp --dport 53 -j REDIRECT --to-ports %s"%args.dns_port)
@@ -248,7 +252,7 @@ if __name__=='__main__':
 
 
     try:
-        server = Pr0cks5Server("127.0.0.1", args.port)
+        server = Pr0cks5Server(bind_address, args.port)
         if args.verbose:
             server.verbose=True
         asyncore.loop()

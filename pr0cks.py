@@ -100,6 +100,7 @@ try:
             (in/out packets will have prepended TCP length header)
         """
         sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        sock.settimeout(15)
         sock.connect((host,port))
         sock.sendall(data)
         response = sock.recv(8192)
@@ -129,6 +130,7 @@ class Socks5Conn(asyncore.dispatcher):
                 display('[+] Forwarding incoming connection from %s to %s through the proxy' % (repr(sock.getpeername()), (address, port)))
             #connect to the original dst :
             self.conn_sock = socks.socksocket()
+            self.conn_sock.settimeout(15)
             self.conn_sock.connect((address, port))
 
             self.sock_class=Socks5Conn(sock=self.conn_sock, conn=self) #add a dispatcher to handle the other side

@@ -1,4 +1,4 @@
-# Author: Nicolas VERDIER
+# Author: Nicolas VERDIER (contact@n1nj4.eu)
 # This file is part of pr0cks.
 #
 # pr0cks is free software: you can redistribute it and/or modify
@@ -25,6 +25,7 @@ import socks
 import argparse
 import traceback
 import logging
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 import binascii
 from collections import OrderedDict
 
@@ -44,7 +45,7 @@ def display(msg):
         print msg
 
 try:
-    from dnslib import DNSRecord
+    from dnslib import DNSRecord, QTYPE
     from dnslib.server import DNSServer,DNSHandler,BaseResolver,DNSLogger
     class ProxyResolver(BaseResolver):
         def __init__(self,address,port):
@@ -66,13 +67,19 @@ try:
             host,port = self.server.resolver.address,self.server.resolver.port
             request = DNSRecord.parse(data)
 
+
             domain=str(request.q.qname)
-            if domain in dns_cache:
-                if time.time()<dns_cache[domain][0]:
+            qtype=str(QTYPE.get(request.q.qtype))
+            index=domain+"/"+qtype
+            if not args.no_cache and index in dns_cache:
+                if time.time()<dns_cache[index][0]:
                     if args is not None and args.verbose:
-                        display("[i] domain %s served from cache"%domain)
+                        try:
+                            display("[i] %s served value from cache: %s"%(index, ', '.join([x.rdata for x in dns_cache[index][1]])))
+                        except:
+                            pass
                     rep=request.reply()
-                    rep.add_answer(*dns_cache[domain][1])
+                    rep.add_answer(*dns_cache[index][1])
                     return rep.pack()
             if args is not None and args.verbose:
                 display("[i] domain %s requested using TCP server %s"%(domain, args.dns_server))
@@ -80,7 +87,11 @@ try:
             response = send_tcp(data,host,port)
             response = response[2:]
             reply = DNSRecord.parse(response)
-            #print(repr(reply))
+            if args.verbose:
+                try:
+                    display("[i] %s %s resolve to %s"%(domain, qtype, ', '.join([x.rdata for x in reply.rr])))
+                except:
+                    pass
             ttl=3600
             try:
                 ttl=reply.rr[0].ttl
@@ -89,7 +100,7 @@ try:
                     ttl=reply.rr.ttl
                 except Exception:
                     pass
-            dns_cache[domain]=(int(time.time())+ttl, reply.rr)
+            dns_cache[index]=(int(time.time())+ttl, reply.rr)
             if len(dns_cache)>DNS_CACHE_SIZE:
                 dns_cache.popitem(last=False)
             return response
@@ -100,7 +111,7 @@ try:
             (in/out packets will have prepended TCP length header)
         """
         sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        sock.settimeout(15)
+        sock.settimeout(5)
         sock.connect((host,port))
         sock.sendall(data)
         response = sock.recv(8192)
@@ -130,7 +141,7 @@ class Socks5Conn(asyncore.dispatcher):
                 display('[+] Forwarding incoming connection from %s to %s through the proxy' % (repr(sock.getpeername()), (address, port)))
             #connect to the original dst :
             self.conn_sock = socks.socksocket()
-            self.conn_sock.settimeout(15)
+            #self.conn_sock.settimeout(15)
             self.conn_sock.connect((address, port))
 
             self.sock_class=Socks5Conn(sock=self.conn_sock, conn=self) #add a dispatcher to handle the other side
@@ -141,7 +152,7 @@ class Socks5Conn(asyncore.dispatcher):
 
     def initiate_send(self):
         num_sent = 0
-        num_sent = asyncore.dispatcher.send(self, self.out_buffer[:2048])
+        num_sent = asyncore.dispatcher.send(self, self.out_buffer[:4096])
         self.out_buffer = self.out_buffer[num_sent:]
 
     def handle_write(self):
@@ -164,7 +175,18 @@ class Socks5Conn(asyncore.dispatcher):
         self.sock_class.send(data)
 
     def handle_close(self):
+        leftover_size=len(self.sock_class.out_buffer)
+        while leftover_size>0 :
+            logging.debug("sending %s leftover data"%leftover_size)
+            self.sock_class.initiate_send()
+            leftover_size=len(self.sock_class.out_buffer)
+
+        self.sock_class.close()
         self.close()
+
+    def handle_error(self):
+        t, v, tb = sys.exc_info()
+        display("[-] Socks5conn Error: %s : %s\n%s"%(t,v, tb))
 
 
 
@@ -181,7 +203,11 @@ class Pr0cks5Server(asyncore.dispatcher):
         pair = self.accept()
         if pair is not None:
             sock, addr = pair
+            self.sock=sock
             handler = Socks5Conn(sock, verbose=self.verbose)
+    def handle_close(self):
+        self.sock.close()
+        self.close()
     def handle_error(self):
         t, v, tb = sys.exc_info()
         display("[-] %s : %s"%(t,v))
@@ -195,10 +221,11 @@ if __name__=='__main__':
     parser.add_argument('-p', '--port', type=int, default=10080, help="port to bind the transparent proxy on the local socket (default 10080)")
     parser.add_argument('-n', '--nat', action='store_true', help="set bind address to 0.0.0.0 to make pr0cks work from a netfilter FORWARD rule instead of OUTPUT")
     parser.add_argument('-v', '--verbose', action="store_true", help="print all the connections requested through the proxy")
+    parser.add_argument('-c', '--no-cache', action="store_true", help="don't cache dns requests")
     parser.add_argument('--username', default=None, help="Username to authenticate with to the server. The default is no authentication.")
     parser.add_argument('--password', default=None, help="Only relevant when a username has been provided")
     parser.add_argument('--dns-port', default=1053, type=int, help="dns port to listen on (default 1053)")
-    parser.add_argument('--dns-server', default="208.67.222.222:53", help="ip:port of the DNS server to forward all DNS requests to using TCP through the proxy (default 208.67.222.222:53)")
+    parser.add_argument('--dns-server', default="8.8.8.8:53", help="ip:port of the DNS server to forward all DNS requests to using TCP through the proxy (default 8.8.8.8:53)")#208.67.222.222:53
     args=parser.parse_args()
 
     bind_address="127.0.0.1"

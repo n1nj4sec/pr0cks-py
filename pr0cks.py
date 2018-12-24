@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with pr0cks.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 import sys
 import StringIO
 import time
@@ -36,13 +37,13 @@ DNS_CACHE_SIZE=1000
 def display(msg):
     msg=msg.strip()
     if msg.startswith("[-]"):
-        print "\033[31m[-]\033[0m"+msg[3:]
+        print("\033[31m[-]\033[0m"+msg[3:])
     elif msg.startswith("[+]"):
-        print "\033[32m[+]\033[0m"+msg[3:]
+        print("\033[32m[+]\033[0m"+msg[3:])
     elif msg.startswith("[i]"):
-        print "\033[1;30m[i]\033[0m"+msg[3:]
+        print("\033[1;30m[i]\033[0m"+msg[3:])
     else:
-        print msg
+        print(msg)
 
 try:
     from dnslib import DNSRecord, QTYPE
@@ -291,4 +292,3 @@ if __name__=='__main__':
     except Exception as e:
         sys.stderr.write(traceback.format_exc())
         sys.exit(1)
-

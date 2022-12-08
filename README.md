@@ -1,3 +1,6 @@
+# PROJECT DEPRECATED
+deprecated in favor of a more efficient golang version available here https://github.com/n1nj4sec/pr0cks
+
 # pr0cks
 python script to transparently forward all TCP and DNS traffic through a socks (like ssh -D option) or HTTPS (CONNECT) proxy using iptables -j REDIRECT target. Only works on linux for now.
 
